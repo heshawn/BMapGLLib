@@ -16,7 +16,9 @@ var BMapGLLib = window.BMapGLLib = BMapGLLib || {};
 
 (function () {
     var T;
-    var baidu = T = baidu || { version: 'gl 1.0' };
+    var baidu = T = baidu || {
+        version: 'gl 1.0'
+    };
     baidu.guid = '$BAIDU$';
     (function () {
         window[baidu.guid] = window[baidu.guid] || {};
@@ -47,7 +49,8 @@ var BMapGLLib = window.BMapGLLib = BMapGLLib || {};
             return element.nodeType == 9 ? element : element.ownerDocument || element.document;
         };
         baidu.browser = baidu.browser || {};
-        baidu.browser.ie = baidu.ie = /msie (\d+\.\d+)/i.test(navigator.userAgent) ? (document.documentMode || + RegExp['\x241']) : undefined;
+        baidu.browser.ie = baidu.ie = /msie (\d+\.\d+)/i.test(navigator.userAgent) ? (document.documentMode ||
+            +RegExp['\x241']) : undefined;
         baidu.dom.getComputedStyle = function (element, key) {
             element = baidu.dom._g(element);
             var doc = baidu.dom.getDocument(element),
@@ -194,8 +197,7 @@ var BMapGLLib = window.BMapGLLib = BMapGLLib || {};
             //存储一条路线
             if (opts['geodesic']) {
                 this.path = getGeodesicPath(path);
-            }
-            else {
+            } else {
                 this.path = path;
             }
             //移动到当前点的索引
@@ -213,8 +215,9 @@ var BMapGLLib = window.BMapGLLib = BMapGLLib || {};
             if (!opts['landmarkPois']) {
                 opts['landmarkPois'] = [];
             }
+
             this._setOptions(opts);
-            this._rotation = 0;//小车转动的角度
+            this._rotation = 0; //小车转动的角度
 
             //如果不是默认实例，则使用默认的icon
             if (!(this._opts.icon instanceof BMapGL.Icon)) {
@@ -222,10 +225,10 @@ var BMapGLLib = window.BMapGLLib = BMapGLLib || {};
             }
         }
     /**
-    * 根据用户输入的opts，修改默认参数_opts
-    * @param {Json Object} opts 用户输入的修改参数.
-    * @return 无返回值.
-    */
+     * 根据用户输入的opts，修改默认参数_opts
+     * @param {Json Object} opts 用户输入的修改参数.
+     * @return 无返回值.
+     */
     LuShu.prototype._setOptions = function (opts) {
         if (!opts) {
             return;
@@ -262,6 +265,7 @@ var BMapGLLib = window.BMapGLLib = BMapGLLib || {};
         } else {
             //第一次点击开始，或者点了stop之后点开始
             me._addMarker();
+            me._addLine();
             //等待marker动画完毕再加载infowindow
             me._timeoutFlag = setTimeout(function () {
                 me._addInfoWin();
@@ -274,6 +278,7 @@ var BMapGLLib = window.BMapGLLib = BMapGLLib || {};
         //重置状态
         this._fromPause = false;
         this._fromStop = false;
+
     };
 
     /**
@@ -346,19 +351,24 @@ var BMapGLLib = window.BMapGLLib = BMapGLLib || {};
             }
             //移除之前的overlay
             this._overlay && this._map.removeOverlay(this._overlay);
+            this._line && this._map.removeOverlay(this._line);
             var marker = new BMapGL.Marker(this.path[0]);
             this._opts.icon && marker.setIcon(this._opts.icon);
             this._map.addOverlay(marker);
             marker.setAnimation(BMAP_ANIMATION_DROP);
             this._marker = marker;
             // 变更
-            var markerL = new BMapGL.Marker(this.path[0], { left: true });
+            var markerL = new BMapGL.Marker(this.path[0], {
+                left: true
+            });
             this._opts.icon && markerL.setIcon(this._opts.icon);
             this._map.addOverlay(markerL);
             markerL.setAnimation(BMAP_ANIMATION_DROP);
             this._markerL = markerL;
 
-            var markerR = new BMapGL.Marker(this.path[0], { right: true });
+            var markerR = new BMapGL.Marker(this.path[0], {
+                right: true
+            });
             this._opts.icon && markerR.setIcon(this._opts.icon);
             this._map.addOverlay(markerR);
             markerR.setAnimation(BMAP_ANIMATION_DROP);
@@ -371,11 +381,24 @@ var BMapGLLib = window.BMapGLLib = BMapGLLib || {};
          */
         _addInfoWin: function () {
             var me = this;
-            var overlay = new CustomOverlay(me._marker.getPosition(), me._opts.defaultContent);
+            var overlay = new CustomOverlay(me._marker.getPosition(), me._opts.defaultContent, me._opts.infoWinClassName);
             //将当前类的引用传给overlay。
             overlay.setRelatedClass(this);
             this._overlay = overlay;
             this._map.addOverlay(overlay);
+        },
+
+        /**
+         * 
+         * 添加路线,当pathColor设置为"none"时不添加，默认颜色 '#00c0ff'
+         * @returns 无返回值
+         */
+        _addLine:function(){          
+            if (this._opts['pathColor'] !=='none') {
+                var me = this;
+                me._line = new BMapGL.Polyline(me.path, { strokeColor: me._opts['pathColor']||'#00c0ff' })
+                me._map.addOverlay(me._line)
+            }
         },
 
         /**
@@ -441,15 +464,36 @@ var BMapGLLib = window.BMapGLLib = BMapGLLib || {};
             }
             //两点之间匀速移动
             me._intervalFlag = setInterval(function () {
+
                 //两点之间当前帧数大于总帧数的时候，则说明已经完成移动
                 if (currentCount >= count) {
                     clearInterval(me._intervalFlag);
                     //移动的点已经超过总的长度
                     if (me.i > me.path.length) {
+
                         return;
                     }
                     //运行下一个点
                     me._moveNext(++me.i);
+
+                    //完成后回调及清除标记
+                    if (me.i >= me.path.length - 1) {
+
+                        //清除标记
+                        if (me._opts.completedClear) {
+                            me._map.removeOverlay(me._marker);
+                            me._map.removeOverlay(me._markerL);
+                            me._map.removeOverlay(me._markerR);
+                            me._map.removeOverlay(me._overlay);
+                            me._map.removeOverlay(me._line);
+                        }
+
+                        //回调
+                        if(typeof me._opts.complete === 'function'){
+                            me._opts.complete()
+                        }
+                    }
+
                 } else {
                     currentCount++;
                     var x = effect(init_pos.x, target_pos.x, currentCount, count),
@@ -483,13 +527,21 @@ var BMapGLLib = window.BMapGLLib = BMapGLLib || {};
                     me._markerR.setPosition(pos);
                     //设置自定义overlay的位置
                     me._setInfoWin(pos);
+                    //变更路线起点为当前经过点
+                    me._line && me._line.setPath([pos,...me.path.slice(me.i+1)]);
+      
+                    //经过某个点的回调
+                    if (typeof me._opts.pass === 'function') {
+                        me._opts.pass(pos)
+                    }
+
                 }
             }, timer);
         },
 
         /**
-        * 在每个点的真实步骤中设置小车转动的角度
-        */
+         * 在每个点的真实步骤中设置小车转动的角度
+         */
         setRotation: function (prePos, curPos, targetPos, direction) {
             var me = this;
             var deg = 0;
@@ -502,8 +554,8 @@ var BMapGLLib = window.BMapGLLib = BMapGLLib || {};
                     atan = Math.atan(tan);
                 deg = atan * 360 / (2 * Math.PI);
                 //degree  correction;
-                if ((!direction && targetPos.x < curPos.x)
-                    || (direction === 'left')) {
+                if ((!direction && targetPos.x < curPos.x) ||
+                    (direction === 'left')) {
                     deg = -deg + 90 + 90;
                 } else {
                     deg = -deg;
@@ -518,8 +570,7 @@ var BMapGLLib = window.BMapGLLib = BMapGLLib || {};
                 var bias = 0;
                 if (disy > 0) {
                     bias = -1;
-                }
-                else {
+                } else {
                     bias = 1;
                 }
                 // 变更
@@ -531,11 +582,13 @@ var BMapGLLib = window.BMapGLLib = BMapGLLib || {};
         },
 
         linePixellength: function (from, to) {
-            return Math.sqrt(Math.abs(from.x - to.x) * Math.abs(from.x - to.x) + Math.abs(from.y - to.y) * Math.abs(from.y - to.y));
+            return Math.sqrt(Math.abs(from.x - to.x) * Math.abs(from.x - to.x) + Math.abs(from.y - to.y) *
+                Math.abs(from.y - to.y));
 
         },
         pointToPoint: function (from, to) {
-            return Math.abs(from.x - to.x) * Math.abs(from.x - to.x) + Math.abs(from.y - to.y) * Math.abs(from.y - to.y)
+            return Math.abs(from.x - to.x) * Math.abs(from.x - to.x) + Math.abs(from.y - to.y) * Math.abs(
+                from.y - to.y)
 
         },
 
@@ -729,23 +782,27 @@ var BMapGLLib = window.BMapGLLib = BMapGLLib || {};
         var lat2 = toRadian(latLng2.lat);
         var lng1 = toRadian(latLng1.lng);
         var lng2 = toRadian(latLng2.lng);
-        return Math.acos(Math.sin(lat1) * Math.sin(lat2)
-            + Math.cos(lat1) * Math.cos(lat2) * Math.cos(Math.abs(lng2 - lng1)));
+        return Math.acos(Math.sin(lat1) * Math.sin(lat2) +
+            Math.cos(lat1) * Math.cos(lat2) * Math.cos(Math.abs(lng2 - lng1)));
     }
-    
+
     /**
      * 自定义的overlay，显示在小车的上方
      * @param {Point} Point 要定位的点.
      * @param {String} html overlay中要显示的东西.
      * @return 无返回值.
      */
-    function CustomOverlay(point, html) {
+    function CustomOverlay(point, html, infoWinClassName) {
         this._point = point;
         this._html = html;
+        this._infoWinClassName = infoWinClassName
     }
     CustomOverlay.prototype = new BMapGL.Overlay();
     CustomOverlay.prototype.initialize = function (map) {
-        var div = this._div = baidu.dom.create('div', { style: 'border:solid 1px #ccc;width:auto;min-width:50px;text-align:center;position:absolute;background:#fff;color:#000;font-size:12px;border-radius: 10px;padding:5px;white-space: nowrap;' });
+        var div = this._div = baidu.dom.create('div', {
+            style: 'border:solid 1px #ccc;width:auto;min-width:50px;text-align:center;position:absolute;background:#fff;color:#000;font-size:12px;border-radius: 10px;padding:5px;white-space: nowrap;'
+            , class: this._infoWinClassName || ''
+        });
         div.innerHTML = this._html;
         map.getPanes().floatPane.appendChild(div);
         this._map = map;
@@ -776,4 +833,3 @@ var BMapGLLib = window.BMapGLLib = BMapGLLib || {};
         }
     });
 })();
-
