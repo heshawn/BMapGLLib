@@ -1,6 +1,6 @@
 # BMapGLLib路书扩展
 
-本代码库forked form <a href="https://github.com/huiyan-fe/BMapGLLib">huiyan-fe/BMapGLLib</a>,仅基于路书功能模块<a href="https://github.com/huiyan-fe/BMapGLLib/tree/master/Lushu">BMapGLLib/Lushu/</a>的扩展。
+本代码库forked from <a href="https://github.com/huiyan-fe/BMapGLLib">huiyan-fe/BMapGLLib</a>,仅基于路书功能模块<a href="https://github.com/huiyan-fe/BMapGLLib/tree/master/Lushu">BMapGLLib/Lushu/</a>的扩展。
 
 路书
 ---------
